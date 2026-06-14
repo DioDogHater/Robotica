@@ -1,0 +1,38 @@
+# Comments
+var test : int = 10
+test = 10
+
+fn test() -> str:
+    var test : str = "test"
+    return test
+
+print(test(), test)
+
+var l : list = [5, 6.212, 2]
+print(l)
+
+var z : complex = complex(5.0, 1.0)
+print(z)
+
+if true and false:
+    print("Hello world!")
+    print("Test")
+elif true:
+    print("Test 2")
+else:
+    print("Ruh Oh")
+
+while true:
+    print("Hello world!")
+    break
+
+for x in l:
+    l.append(x)
+print(l)
+
+for i from 0 to 5:
+    if i % 2 == 0:
+        print("Even")
+    elif i == 3:
+        continue
+    print(i)

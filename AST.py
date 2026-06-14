@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Iterable, KeysView, ItemsView, override
 from types import NoneType
 from enum import Enum
+from functools import cached_property
 
 import math
 from lexer import *
@@ -303,7 +304,7 @@ class FuncCall(Expr):
                 if not (method in Context.methods): raise Exception()
             except Exception as e:
                 lexer.exception(f"Method {self.__func.member.content} not found", self.__func.tk)
-            func : BuiltinFunc = BuiltinFunc(self.__func.member.content, Context.methods[method], self.__func.getattr(obj))
+            func : BuiltinFunc = BuiltinFunc(self.__func.member.content, Context.methods[method], self.__func.getattr(obj, lexer))
         else:
             lexer.exception("Not a function", self.__func.tk)
         args : list[Any] = []
@@ -324,7 +325,9 @@ class Operation(Expr):
     BIN_OPS : dict[str, Callable] = {
         "+": lambda x, y : x + y,
         "-": lambda x, y : x - y,
+        "*": lambda x, y : x * y,
         "/": lambda x, y : x / y,
+        "//": lambda x, y : x // y,
         "%": lambda x, y : x % y,
         "^": lambda x, y : x ** y,
         "|": lambda x, y : x | y,
@@ -433,20 +436,27 @@ class Access(Expr):
     def get_obj(self, context : Context, lexer : Lexer) -> Any:
         return self.__where.value(context, lexer)
 
-    def getattr(self, obj : Any) -> Any:
+    def check_attr(self, obj : Any, lexer : Lexer):
+        if not (type(obj) in Context.attributes) or not (self.member.content in Context.attributes[type(obj)]):
+            lexer.exception(f"Attribute {self.member.content} not found", self.tk)
+
+    def getattr(self, obj : Any, lexer : Lexer) -> Any:
         try:
             return getattr(obj, self.__member.content)
         except Exception as e:
-            if type(e) == Exception:
-                raise e
+            lexer.exception(f"{type(e).__name__} - {e}", self.__member)
+
+    def setattr(self, obj : Any, val : Any, lexer : Lexer):
+        try:
+            setattr(obj, self.__member.content, val)
+        except Exception as e:
             lexer.exception(f"{type(e).__name__} - {e}", self.__member)
 
     @override
     def value(self, context : Context, lexer : Lexer) -> Any:
         obj : Any = self.get_obj(context, lexer)
-        if not (type(obj) in Context.attributes) or not (self.member.content in Context.attributes[type(obj)]):
-            lexer.exception(f"Attribute {self.member.content} not found", self.tk)
-        return self.getattr(obj)
+        self.check_attr(obj, lexer)
+        return self.getattr(obj, lexer)
 
     @override
     def __str__(self) -> str:
@@ -487,7 +497,7 @@ class Statement:
     def __init__(self, parent : Statement | None = None):
         self.__parent : Statement | None = parent
 
-    @property
+    @cached_property
     def lexer(self) -> Lexer:
         return self.parent.lexer
 
@@ -495,7 +505,7 @@ class Statement:
     def parent(self) -> Statement:
         return self.__parent
 
-    @property
+    @cached_property
     def context(self) -> Context:
         return self.parent.context
 
@@ -557,7 +567,7 @@ class VarAssignment(Statement):
     def execute(self):
         if isinstance(self.__dest, Term) and self.__dest.val == TkType.NAME:
             if not (self.__dest.val.content in self.context.vars):
-                self.lexer.exception(f"Variable {self.__dest.val} does not exist", self.__dest.val)
+                self.lexer.exception(f"Variable {self.__dest.val} does not exist", self.__dest.tk)
             var : Var = self.context.vars[self.__dest.val.content]
             var.value = self.__value.value(self.context, self.lexer)
         elif isinstance(self.__dest, Operation) and self.__dest.operator == "[":
@@ -568,7 +578,11 @@ class VarAssignment(Statement):
             except Exception as e:
                 if type(e) == Exception:
                     raise e
-                self.lexer.exception(f"{type(e).__name__} - {e}", self.__dest.operator)
+                self.lexer.exception(f"{type(e).__name__} - {e}", self.__dest.tk)
+        elif isinstance(self.__dest, Access):
+            obj : Any = self.__dest.get_obj(self.context, self.lexer)
+            self.__dest.check_attr(obj, self.lexer)
+            self.__dest.setattr(obj, self.__value.value(self.context, self.lexer), self.lexer)
         else:
             self.lexer.exception(f"Cannot assign value to {self.__dest}", self.__dest.tk)
 

@@ -67,6 +67,7 @@ class Parser:
             "-" : 6,
             "*" : 7,
             "/" : 7,
+            "//": 7,
             "%" : 7,
             "$neg": 7,
             "^" : 8,
@@ -187,6 +188,7 @@ class Parser:
                 type = self.parse_type()
             if self.consume(content="="):
                 val = self.expr()
+            self.consume(content=";")
             return VarCreation(name, type=type, value=val, parent=parent)
 
         # Function definition
@@ -229,10 +231,12 @@ class Parser:
             func = FuncDef(name, args, type, parent=parent)
             self.parse_scope(func, indent)
 
+            self.consume(content=";")
             return func
 
         # Return statement
         if self.consume(content="return"):
+            self.consume(content=";")
             return Return(self.expr(), parent=parent)
 
         # If statement
@@ -293,18 +297,26 @@ class Parser:
 
         # Break statement
         if self.consume(content="break"):
+            self.consume(content=";")
             return Break(self.current, parent=parent)
 
         # Continue statement
         if self.consume(content="continue"):
+            self.consume(content=";")
             return Continue(self.current, parent=parent)
 
         # Expression statement
         expr : Expr = self.expr()
 
         # Variable assignment
-        if self.consume(content="="):
-            return VarAssignment(expr, self.expr(), parent=parent)
+        if self.consume(content=("=", "+=", "-=", "*=", "/=", "//=", "%=", "&=", "|=", "^=")):
+            if self.current.content == "=":
+                val : Expr = self.expr()
+            else:
+                val : Expr = self.led(expr, Token(self.current.content[:-1], TkType.OPERATOR, self.current.line, self.current.offset))
+            self.consume(content=";")
+            return VarAssignment(expr, val, parent=parent)
+        self.consume(content=";")
         return ExprStatement(expr, parent=parent)
 
         self.lexer.exception("Unknown statement", self.peek())

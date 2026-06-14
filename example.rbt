@@ -1,6 +1,9 @@
-# Comments
+# Comments are like in python
+
 var test : int = 10
-test = 10
+test *= 10
+
+test = round(6.7)
 
 fn test() -> str:
     var test : str = "test"

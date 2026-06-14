@@ -78,6 +78,7 @@ rbt.add_type(
 )
 ```
 *NOTE: type checking of attributes should be done in Python for added types.*
+<br></br>
 
 ## Syntax
 #### Basic types
@@ -110,6 +111,9 @@ They are a bundle of statements that are used in functions, ifs, loops, etc.
 A code block in Python begins with `:` and must be indented (spaces must be
 added). However, in Robotica, code blocks can also be enclosed by braces `{}`,
 like in C++, Java, Javascript, etc.
+
+Moreover, since indentation is optional when using `{}`, you can cram muliple statements
+in the same line without any problem.
 
 #### Scope
 A scope is a block of code that has its own functions and variables that are

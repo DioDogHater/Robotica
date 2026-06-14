@@ -61,7 +61,7 @@ class Lexer:
     NAME : re.Pattern     = re.compile(r"[a-zA-Z_][a-zA-Z_0-9]*")
     NUMBER : re.Pattern   = re.compile(r"0x[0-9a-fA-F]+|0o[0-7]+|0b[01]+|[0-9]+(?:\.[0-9]+)?(?:e[+-]?[0-9]+)?")
     STRING : re.Pattern   = re.compile(r"\"[^\"]*\"")
-    OPERATOR : re.Pattern = re.compile(r"[><]{2}|[><]=?|[!=~]?=|[\+\-\*/%&\|\^]=?|[\[\]\{\}\(\).,:;]")
+    OPERATOR : re.Pattern = re.compile(r"[><]{2}|[><]=?|[!=~]?=|[/]{2}=?|[\+\-\*/%&\|\^]=?|[\[\]\{\}\(\).,:;]")
     CONSTS : dict[str, TkType] = {"true": TkType.TRUE, "yes": TkType.TRUE,
                                   "false": TkType.FALSE, "no": TkType.FALSE,
                                   "nothing": TkType.NOTHING, "none": TkType.NOTHING}
@@ -127,7 +127,6 @@ class Lexer:
                         type = TkType.OPERATOR
                     self.tokens.append(Token(name, type, line_number, offset))
                 elif line.startswith("#"):
-                    line_number += 1
                     break
                 else:
                     self.exception(f"Unknown symbol '{line[0]}'", (line_number, offset))

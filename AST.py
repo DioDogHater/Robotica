@@ -5,6 +5,8 @@ from types import NoneType
 from enum import Enum
 from functools import cached_property
 
+from threading import Thread
+
 import math
 from lexer import *
 
@@ -830,3 +832,6 @@ class GlobalScope(Scope):
         if isinstance(val, LoopInterupt):
             self.lexer.exception(f"Not inside a loop", val.source)
         return val
+
+    def new_thread(self) -> Thread:
+        return Thread(target=self.execute, daemon=True)
